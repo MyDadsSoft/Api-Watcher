@@ -153,4 +153,4 @@ if __name__ == '__main__':
         os.remove(CACHE_FILE)
     run_background_tasks()
     app.run(host='0.0.0.0', port=8080)
-)
+
