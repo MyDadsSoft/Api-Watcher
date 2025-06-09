@@ -1,36 +1,23 @@
 from flask import Flask
 from threading import Thread
-
-app = Flask('')
-
-@app.route('/')
-def home():
-    return "I'm alive!"
-
-def run():
-    app.run(host='0.0.0.0', port=8080)
-
-def keep_alive():
-    t = Thread(target=run)
-    t.start()
-
-keep_alive()
-
-
 import requests
 import time
 import json
 import os
 from datetime import datetime
 
+app = Flask('')
+
 WEBHOOK_URL = os.environ['WEBHOOK_URL']
 API_URL = "https://molerapi.moler.cloud/mods/"
-CHECK_INTERVAL = 60  # seconds
+CHECK_INTERVAL = 60
 CACHE_FILE = "mod_cache.json"
-
-START_DATE_STR = "2025-06-07"  # Date only, no time
+START_DATE_STR = "2025-06-07"
 START_DATE = datetime.strptime(START_DATE_STR, "%Y-%m-%d").date()
 
+@app.route('/')
+def home():
+    return "I'm alive!"
 
 def load_cached_mods():
     if os.path.exists(CACHE_FILE):
@@ -38,11 +25,9 @@ def load_cached_mods():
             return json.load(f)
     return []
 
-
 def save_cached_mods(mods):
     with open(CACHE_FILE, "w") as f:
         json.dump(mods, f)
-
 
 def fetch_mods():
     try:
@@ -53,14 +38,13 @@ def fetch_mods():
         print(f"[ERROR] Failed to fetch mods: {e}")
         return []
 
-
 def send_discord_notification(mod):
     title = mod.get("name", "Untitled Mod")  
     category = mod.get("category", "Unknown")
     version = mod.get("version", "Unknown")
     access = mod.get("access_type", "Unknown")
     created_at = mod.get("created_at", "")
-    image_url = mod.get("image_url", "")  # get image URL
+    image_url = mod.get("image_url", "")
 
     created_date_str = created_at.split("T")[0] if "T" in created_at else created_at
 
@@ -89,9 +73,7 @@ def send_discord_notification(mod):
     except Exception as e:
         print(f"[ERROR] Webhook failed: {e}")
 
-
-
-def main():
+def check_for_new_mods():
     print("🔁 Starting API watcher...")
     cached_mods = load_cached_mods()
     cached_ids = {mod['id'] for mod in cached_mods if 'id' in mod}
@@ -116,7 +98,6 @@ def main():
             except Exception:
                 continue
 
-            # Check date only, and if mod not in cache
             if mod_id not in cached_ids and created_date >= START_DATE:
                 new_mods.append(mod)
 
@@ -132,6 +113,13 @@ def main():
 
         time.sleep(CHECK_INTERVAL)
 
+def run_background_tasks():
+    t = Thread(target=check_for_new_mods)
+    t.daemon = True
+    t.start()
 
-if __name__ == "__main__":
-    main()
+def run():
+    run_background_tasks()
+    app.run(host='0.0.0.0', port=8080)
+
+run()
