@@ -28,7 +28,7 @@ def load_cached_mods():
 
 def save_cached_mods(mods):
     with open(CACHE_FILE, "w") as f:
-        json.dump(mods, f)
+        json.dump(mods, f, indent=2)
 
 def fetch_mods():
     try:
@@ -69,13 +69,21 @@ def send_discord_notification(mod):
 
     data = {"username": "API Bot", "embeds": [embed]}
 
-    try:
-        response = requests.post(WEBHOOK_URL, json=data)
-        response.raise_for_status()
-        print(f"[SENT] Webhook for: {title}")
-    except Exception as e:
-        print(f"[ERROR] Webhook failed: {e}")
-        print(f"[WEBHOOK PAYLOAD] {json.dumps(data, indent=2)}")
+    while True:
+        try:
+            response = requests.post(WEBHOOK_URL, json=data)
+            if response.status_code == 429:
+                retry_after = response.json().get("retry_after", 1000) / 1000  # ms to seconds
+                print(f"[RATE LIMITED] Retrying after {retry_after} seconds...")
+                time.sleep(retry_after)
+                continue
+            response.raise_for_status()
+            print(f"[SENT] Webhook for: {title}")
+            break
+        except requests.exceptions.RequestException as e:
+            print(f"[ERROR] Webhook failed: {e}")
+            print(f"[WEBHOOK PAYLOAD] {json.dumps(data, indent=2)}")
+            break
 
 def check_for_new_mods():
     print("🔁 Mod watcher started...")
@@ -97,10 +105,10 @@ def check_for_new_mods():
                 continue
 
             try:
-                created_dt = datetime.fromisoformat(
-                    created_str.replace("Z", "+00:00"))
+                created_dt = datetime.fromisoformat(created_str.replace("Z", "+00:00"))
                 created_date = created_dt.date()
-            except Exception:
+            except Exception as e:
+                print(f"[ERROR] Date parsing error: {e}")
                 continue
 
             print(f"[DEBUG] Mod: {mod.get('name')} | Created: {created_date} | ID: {mod_id}")
