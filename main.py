@@ -28,7 +28,7 @@ API_URL = "https://molerapi.moler.cloud/mods/"
 CHECK_INTERVAL = 60  # seconds
 CACHE_FILE = "mod_cache.json"
 
-START_DATE_STR = "2025-06-07"  # Date only, no time
+START_DATE_STR = "2025-06-02"  # Date only, no time
 START_DATE = datetime.strptime(START_DATE_STR, "%Y-%m-%d").date()
 
 
