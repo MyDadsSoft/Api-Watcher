@@ -134,5 +134,8 @@ def run_background_tasks():
     t.start()
 
 if __name__ == '__main__':
+    if os.path.exists(CACHE_FILE):
+        print("[INFO] Deleting mod_cache.json at startup...")
+        os.remove(CACHE_FILE)
     run_background_tasks()
     app.run(host='0.0.0.0', port=8080)
