@@ -125,8 +125,6 @@ def run_background_tasks():
     t.daemon = True
     t.start()
 
-@app.before_first_request
-def activate_job():
+if __name__ == '__main__':
     run_background_tasks()
-
-app.run(host='0.0.0.0', port=8080)
+    app.run(host='0.0.0.0', port=8080)
