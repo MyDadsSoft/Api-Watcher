@@ -10,14 +10,15 @@ app = Flask('')
 
 WEBHOOK_URL = os.environ['WEBHOOK_URL']
 API_URL = "https://molerapi.moler.cloud/mods/"
-CHECK_INTERVAL = 60
+CHECK_INTERVAL = 60  # seconds
 CACHE_FILE = "mod_cache.json"
+
 START_DATE_STR = "2025-06-07"
 START_DATE = datetime.strptime(START_DATE_STR, "%Y-%m-%d").date()
 
 @app.route('/')
 def home():
-    return "I'm alive!"
+    return "✅ I'm alive! Watching for new mods..."
 
 def load_cached_mods():
     if os.path.exists(CACHE_FILE):
@@ -74,7 +75,7 @@ def send_discord_notification(mod):
         print(f"[ERROR] Webhook failed: {e}")
 
 def check_for_new_mods():
-    print("🔁 Starting API watcher...")
+    print("🔁 Mod watcher started...")
     cached_mods = load_cached_mods()
     cached_ids = {mod['id'] for mod in cached_mods if 'id' in mod}
 
@@ -109,7 +110,7 @@ def check_for_new_mods():
                 cached_mods.append(mod)
             save_cached_mods(cached_mods)
         else:
-            print("✅ No new mods.")
+            print("✅ No new mods found.")
 
         time.sleep(CHECK_INTERVAL)
 
