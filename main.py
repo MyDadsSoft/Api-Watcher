@@ -2,7 +2,6 @@ from flask import Flask
 from threading import Thread
 import requests
 import time
-import json
 import os
 from datetime import datetime
 
@@ -10,28 +9,16 @@ app = Flask('')
 
 WEBHOOK_URL = os.environ.get('WEBHOOK_URL', '')
 API_URL = "https://molerapi.moler.cloud/mods/"
-CHECK_INTERVAL = 5  # seconds
-CACHE_FILE = "mod_cache.json"
-
+CHECK_INTERVAL = 60  # seconds
 START_DATE_STR = "2025-06-07"
 START_DATE = datetime.strptime(START_DATE_STR, "%Y-%m-%d").date()
+
+seen_mod_ids = set()  # In-memory cache only
 
 
 @app.route('/')
 def home():
     return "✅ I'm alive! Watching for new mods..."
-
-
-def load_cached_mods():
-    if os.path.exists(CACHE_FILE):
-        with open(CACHE_FILE, "r") as f:
-            return json.load(f)
-    return []
-
-
-def save_cached_mods(mods):
-    with open(CACHE_FILE, "w") as f:
-        json.dump(mods, f, indent=2)
 
 
 def fetch_mods():
@@ -54,13 +41,14 @@ def send_discord_notification(mod):
     created_at = mod.get("created_at", "")
     image_url = mod.get("image_url", "")
 
-    created_date_str = created_at.split(
-        "T")[0] if "T" in created_at else created_at
+    created_date_str = created_at.split("T")[0] if "T" in created_at else created_at
 
-    description = (f"**Category:** {category}\n"
-                   f"**Version:** {version}\n"
-                   f"**Access:** {access}\n"
-                   f"**Uploaded:** {created_date_str}")
+    description = (
+        f"**Category:** {category}\n"
+        f"**Version:** {version}\n"
+        f"**Access:** {access}\n"
+        f"**Uploaded:** {created_date_str}"
+    )
 
     embed = {
         "title": f"🆕 New Mod: {title}",
@@ -77,10 +65,8 @@ def send_discord_notification(mod):
         try:
             response = requests.post(WEBHOOK_URL, json=data)
             if response.status_code == 429:
-                retry_after = response.json().get("retry_after",
-                                                  1000) / 1000  # ms to seconds
-                print(
-                    f"[RATE LIMITED] Retrying after {retry_after} seconds...")
+                retry_after = response.json().get("retry_after", 1000) / 1000
+                print(f"[RATE LIMITED] Retrying after {retry_after} seconds...")
                 time.sleep(retry_after)
                 continue
             response.raise_for_status()
@@ -88,20 +74,15 @@ def send_discord_notification(mod):
             break
         except requests.exceptions.RequestException as e:
             print(f"[ERROR] Webhook failed: {e}")
-            print(f"[WEBHOOK PAYLOAD] {json.dumps(data, indent=2)}")
             break
 
 
 def check_for_new_mods():
     print("🔁 Mod watcher started...")
-    cached_mods = load_cached_mods()
-    cached_ids = {mod['id'] for mod in cached_mods if 'id' in mod}
 
     while True:
         mods = fetch_mods()
-        print(
-            f"[INFO] Checking {len(mods)} mods for new entries since {START_DATE}"
-        )
+        print(f"[INFO] Checking {len(mods)} mods for new entries since {START_DATE}")
         new_mods = []
 
         for mod in mods:
@@ -114,27 +95,22 @@ def check_for_new_mods():
                 continue
 
             try:
-                created_dt = datetime.fromisoformat(
-                    created_str.replace("Z", "+00:00"))
+                created_dt = datetime.fromisoformat(created_str.replace("Z", "+00:00"))
                 created_date = created_dt.date()
             except Exception as e:
                 print(f"[ERROR] Date parsing error: {e}")
                 continue
 
-            print(
-                f"[DEBUG] Mod: {mod.get('name')} | Created: {created_date} | ID: {mod_id}"
-            )
+            print(f"[DEBUG] Mod: {mod.get('name')} | Created: {created_date} | ID: {mod_id}")
 
-            if mod_id not in cached_ids and created_date >= START_DATE:
+            if mod_id not in seen_mod_ids and created_date >= START_DATE:
                 new_mods.append(mod)
+                seen_mod_ids.add(mod_id)
 
         if new_mods:
             print(f"[FOUND] {len(new_mods)} new mod(s).")
             for mod in new_mods:
                 send_discord_notification(mod)
-                cached_ids.add(mod['id'])
-                cached_mods.append(mod)
-            save_cached_mods(cached_mods)
         else:
             print("✅ No new mods found.")
 
@@ -148,9 +124,6 @@ def run_background_tasks():
 
 
 if __name__ == '__main__':
-    if os.path.exists(CACHE_FILE):
-        print("[INFO] Deleting mod_cache.json at startup...")
-        os.remove(CACHE_FILE)
+    print("[BOOT] App started fresh — in-memory cache cleared.")
     run_background_tasks()
     app.run(host='0.0.0.0', port=8080)
-
