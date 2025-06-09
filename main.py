@@ -8,7 +8,7 @@ from datetime import datetime
 
 app = Flask('')
 
-WEBHOOK_URL = os.environ['WEBHOOK_URL']
+WEBHOOK_URL = os.environ.get('WEBHOOK_URL', '')
 API_URL = "https://molerapi.moler.cloud/mods/"
 CHECK_INTERVAL = 60  # seconds
 CACHE_FILE = "mod_cache.json"
@@ -34,7 +34,9 @@ def fetch_mods():
     try:
         response = requests.get(API_URL)
         response.raise_for_status()
-        return response.json()
+        mods = response.json()
+        print(f"[FETCHED] {len(mods)} mods fetched from API.")
+        return mods
     except Exception as e:
         print(f"[ERROR] Failed to fetch mods: {e}")
         return []
@@ -73,6 +75,7 @@ def send_discord_notification(mod):
         print(f"[SENT] Webhook for: {title}")
     except Exception as e:
         print(f"[ERROR] Webhook failed: {e}")
+        print(f"[WEBHOOK PAYLOAD] {json.dumps(data, indent=2)}")
 
 def check_for_new_mods():
     print("🔁 Mod watcher started...")
@@ -81,6 +84,7 @@ def check_for_new_mods():
 
     while True:
         mods = fetch_mods()
+        print(f"[INFO] Checking {len(mods)} mods for new entries since {START_DATE}")
         new_mods = []
 
         for mod in mods:
@@ -98,6 +102,8 @@ def check_for_new_mods():
                 created_date = created_dt.date()
             except Exception:
                 continue
+
+            print(f"[DEBUG] Mod: {mod.get('name')} | Created: {created_date} | ID: {mod_id}")
 
             if mod_id not in cached_ids and created_date >= START_DATE:
                 new_mods.append(mod)
@@ -119,8 +125,8 @@ def run_background_tasks():
     t.daemon = True
     t.start()
 
-def run():
+@app.before_first_request
+def activate_job():
     run_background_tasks()
-    app.run(host='0.0.0.0', port=8080)
 
-run()
+app.run(host='0.0.0.0', port=8080)
