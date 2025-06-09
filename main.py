@@ -10,7 +10,7 @@ app = Flask('')
 
 WEBHOOK_URL = os.environ.get('WEBHOOK_URL', '')
 API_URL = "https://molerapi.moler.cloud/mods/"
-CHECK_INTERVAL = 60  # seconds
+CHECK_INTERVAL = 5  # seconds
 CACHE_FILE = "mod_cache.json"
 
 START_DATE_STR = "2025-06-07"
