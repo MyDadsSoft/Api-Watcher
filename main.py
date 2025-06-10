@@ -32,7 +32,6 @@ def fetch_mods():
         print(f"[ERROR] Failed to fetch mods: {e}")
         return []
 
-
 def send_discord_notification(mod):
     title = mod.get("name", "Untitled Mod")
     category = mod.get("category", "Unknown")
@@ -60,25 +59,9 @@ def send_discord_notification(mod):
     if image_url:
         embed["image"] = {"url": image_url}
 
-    launch_url = f"myapp://mod/{mod_id}"
-
     data = {
         "username": "API Bot",
-        "content": f"🆕 New mod available: **{title}**",  # <- Required to ensure buttons show
-        "embeds": [embed],
-        "components": [
-            {
-                "type": 1,
-                "components": [
-                    {
-                        "type": 2,
-                        "style": 5,  # Link button
-                        "label": "🟢 Download & Launch",
-                        "url": launch_url
-                    }
-                ]
-            }
-        ]
+        "embeds": [embed]
     }
 
     if not WEBHOOK_URL:
@@ -109,6 +92,7 @@ def send_discord_notification(mod):
 
     except requests.exceptions.RequestException as e:
         print(f"[ERROR] Webhook request exception: {e}")
+
 
 
 
