@@ -67,20 +67,30 @@ def send_discord_notification(mod):
         "content": f"[🟢 Download & Launch]({launch_url})",
         "embeds": [embed]
     }
-    while True:
-        try:
-            response = requests.post(WEBHOOK_URL, json=data)
-            if response.status_code == 429:
+
+    if not WEBHOOK_URL:
+        print("[ERROR] WEBHOOK_URL is empty or not set!")
+        return
+
+    try:
+        response = requests.post(WEBHOOK_URL, json=data)
+        if response.status_code == 429:
+            try:
                 retry_after = response.json().get("retry_after", 1000) / 1000
-                print(f"[RATE LIMITED] Retrying after {retry_after} seconds...")
-                time.sleep(retry_after)
-                continue
-            response.raise_for_status()
+            except Exception:
+                retry_after = 1
+            print(f"[RATE LIMITED] Retrying after {retry_after} seconds...")
+            time.sleep(retry_after)
+            response = requests.post(WEBHOOK_URL, json=data)
+
+        if not response.ok:
+            print(f"[ERROR] Webhook failed with status {response.status_code}")
+            print(f"[RESPONSE BODY] {response.text}")
+        else:
             print(f"[SENT] Webhook for: {title} (ID: {mod_id})")
-            break
-        except requests.exceptions.RequestException as e:
-            print(f"[ERROR] Webhook failed: {e}")
-            break
+
+    except requests.exceptions.RequestException as e:
+        print(f"[ERROR] Webhook request exception: {e}")
 
 
 def check_for_new_mods():
