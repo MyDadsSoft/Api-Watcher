@@ -40,10 +40,11 @@ def send_discord_notification(mod):
     access = mod.get("access_type", "Unknown")
     created_at = mod.get("created_at", "")
     image_url = mod.get("image_url", "")
+    mod_id = mod.get("id", "unknown")
 
     created_date_str = created_at.split("T")[0] if "T" in created_at else created_at
 
-    # Embed description without launch link
+    # Embed description
     description = (
         f"**Category:** {category}\n"
         f"**Version:** {version}\n"
@@ -60,10 +61,12 @@ def send_discord_notification(mod):
     if image_url:
         embed["image"] = {"url": image_url}
 
-    # 🔁 This part is key: put the launch link in the "content" field!
+    # 🔗 Launch link with mod ID
+    launch_url = f"myapp://mod/{mod_id}"
+
     data = {
         "username": "API Bot",
-        "content": f"[🟢 Download & Launch](myapp://launch)",
+        "content": f"[🟢 Download & Launch]({launch_url})",
         "embeds": [embed]
     }
 
@@ -76,7 +79,7 @@ def send_discord_notification(mod):
                 time.sleep(retry_after)
                 continue
             response.raise_for_status()
-            print(f"[SENT] Webhook for: {title}")
+            print(f"[SENT] Webhook for: {title} (ID: {mod_id})")
             break
         except requests.exceptions.RequestException as e:
             print(f"[ERROR] Webhook failed: {e}")
