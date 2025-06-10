@@ -102,10 +102,6 @@ def send_discord_notification(mod):
 
 
         f"**Uploaded:** {created_date_str}\n"
-
-
-        f"[🟢 Download & Launch](myapp://launch)"
-
     )
 
 
