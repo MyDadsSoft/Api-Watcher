@@ -47,8 +47,10 @@ def send_discord_notification(mod):
         f"**Category:** {category}\n"
         f"**Version:** {version}\n"
         f"**Access:** {access}\n"
-        f"**Uploaded:** {created_date_str}"
+        f"**Uploaded:** {created_date_str}\n"
+        f"[🟢 Download & Launch](myapp://launch)"
     )
+
 
     embed = {
         "title": f"🆕 New Mod: {title}",
