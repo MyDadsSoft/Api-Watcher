@@ -12,6 +12,7 @@ API_URL = "https://molerapi.moler.cloud/mods/"
 CHECK_INTERVAL = 60  # seconds
 START_DATE_STR = "2025-06-07"
 START_DATE = datetime.strptime(START_DATE_STR, "%Y-%m-%d").date()
+
 seen_mod_ids = set()  # In-memory cache only
 
 
@@ -39,7 +40,6 @@ def send_discord_notification(mod):
     access = mod.get("access_type", "Unknown")
     created_at = mod.get("created_at", "")
     image_url = mod.get("image_url", "")
-    mod_id = mod.get("id", "unknown")
 
     created_date_str = created_at.split("T")[0] if "T" in created_at else created_at
 
@@ -59,30 +59,18 @@ def send_discord_notification(mod):
     if image_url:
         embed["image"] = {"url": image_url}
 
-    data = {
-        "username": "API Bot",
-        "embeds": [embed]
-    }
-
-    if not WEBHOOK_URL:
-        print("[ERROR] WEBHOOK_URL is not set!")
-        return
+    data = {"username": "API Bot", "embeds": [embed]}
 
     while True:
         try:
-            headers = {
-                "Content-Type": "application/json",
-                "User-Agent": "ModWatcherBot/1.0"
-            }
-            response = requests.post(WEBHOOK_URL, json=data, headers=headers)
+            response = requests.post(WEBHOOK_URL, json=data)
             if response.status_code == 429:
                 retry_after = response.json().get("retry_after", 1000) / 1000
                 print(f"[RATE LIMITED] Retrying after {retry_after} seconds...")
                 time.sleep(retry_after)
                 continue
-
             response.raise_for_status()
-            print(f"[SENT] Webhook for: {title} (ID: {mod_id})")
+            print(f"[SENT] Webhook for: {title}")
             break
         except requests.exceptions.RequestException as e:
             print(f"[ERROR] Webhook failed: {e}")
@@ -123,7 +111,6 @@ def check_for_new_mods():
             print(f"[FOUND] {len(new_mods)} new mod(s).")
             for mod in new_mods:
                 send_discord_notification(mod)
-                time.sleep(1.5)  # Rate-limit-safe delay
         else:
             print("✅ No new mods found.")
 
