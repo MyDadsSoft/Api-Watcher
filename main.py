@@ -1,21 +1,10 @@
 from flask import Flask
-More actions
-
 from threading import Thread
-
 import requests
-
 import time
-
 import os
-
 from datetime import datetime
-
-
-
 app = Flask('')
-
-
 
 WEBHOOK_URL = os.environ.get('WEBHOOK_URL', '')
 
@@ -102,6 +91,7 @@ def send_discord_notification(mod):
 
 
         f"**Uploaded:** {created_date_str}\n"
+
     )
 
 
@@ -257,8 +247,8 @@ def run_background_tasks():
 
 if __name__ == '__main__':
 
-    print("[BOOT] App started fresh — in-memory cache cleared.")More actions
+    print("[BOOT] App started fresh — in-memory cache cleared.")
 
-    run_background_tasks()
+    run_background_tasks()More actions
 
     app.run(host='0.0.0.0', port=8080)
