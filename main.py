@@ -44,7 +44,6 @@ def send_discord_notification(mod):
 
     created_date_str = created_at.split("T")[0] if "T" in created_at else created_at
 
-    # Embed description
     description = (
         f"**Category:** {category}\n"
         f"**Version:** {version}\n"
@@ -61,7 +60,6 @@ def send_discord_notification(mod):
     if image_url:
         embed["image"] = {"url": image_url}
 
-    # 🔗 Launch link with mod ID
     launch_url = f"myapp://mod/{mod_id}"
 
     data = {
@@ -69,7 +67,6 @@ def send_discord_notification(mod):
         "content": f"[🟢 Download & Launch]({launch_url})",
         "embeds": [embed]
     }
-
     while True:
         try:
             response = requests.post(WEBHOOK_URL, json=data)
