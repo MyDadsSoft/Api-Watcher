@@ -64,6 +64,7 @@ def send_discord_notification(mod):
 
     data = {
         "username": "API Bot",
+        "content": f"🆕 New mod available: **{title}**",  # <- Required to ensure buttons show
         "embeds": [embed],
         "components": [
             {
@@ -85,7 +86,12 @@ def send_discord_notification(mod):
         return
 
     try:
-        response = requests.post(WEBHOOK_URL, json=data)
+        headers = {
+            "Content-Type": "application/json",
+            "User-Agent": "ModWatcherBot/1.0"
+        }
+
+        response = requests.post(WEBHOOK_URL, json=data, headers=headers)
         if response.status_code == 429:
             try:
                 retry_after = response.json().get("retry_after", 1000) / 1000
@@ -93,7 +99,7 @@ def send_discord_notification(mod):
                 retry_after = 1
             print(f"[RATE LIMITED] Retrying after {retry_after} seconds...")
             time.sleep(retry_after)
-            response = requests.post(WEBHOOK_URL, json=data)
+            response = requests.post(WEBHOOK_URL, json=data, headers=headers)
 
         if not response.ok:
             print(f"[ERROR] Webhook failed with status {response.status_code}")
