@@ -47,6 +47,7 @@ def send_discord_notification(mod):
         f"**Category:** {category}\n"
         f"**Version:** {version}\n"
         f"**Access:** {access}\n"
+        f"**Uploaded:** {created_date_str}\n"
         f"**Uploaded:** {created_date_str}"
     )
 
@@ -56,42 +57,53 @@ def send_discord_notification(mod):
         "color": 3066993
     }
 
-    if image_url:
-        embed["image"] = {"url": image_url}
+    embed = {
 
-    data = {
-        "username": "API Bot",
-        "embeds": [embed]
+        "title": f"🆕 New Mod: {title}",
+
+        "description": description,Add commentMore actions
+
+        "color": 3066993
+
     }
 
-    if not WEBHOOK_URL:
-        print("[ERROR] WEBHOOK_URL is empty or not set!")
-        return
 
-    try:
-        headers = {
-            "Content-Type": "application/json",
-            "User-Agent": "ModWatcherBot/1.0"
-        }
 
-        response = requests.post(WEBHOOK_URL, json=data, headers=headers)
-        if response.status_code == 429:
-            try:
+    if image_url:
+
+        embed["image"] = {"url": image_url}
+
+
+
+    data = {"username": "API Bot", "embeds": [embed]}
+
+
+
+    while True:
+
+        try:
+
+            response = requests.post(WEBHOOK_URL, json=data)
+
+            if response.status_code == 429:
+
                 retry_after = response.json().get("retry_after", 1000) / 1000
-            except Exception:
-                retry_after = 1
-            print(f"[RATE LIMITED] Retrying after {retry_after} seconds...")
-            time.sleep(retry_after)
-            response = requests.post(WEBHOOK_URL, json=data, headers=headers)
 
-        if not response.ok:
-            print(f"[ERROR] Webhook failed with status {response.status_code}")
-            print(f"[RESPONSE BODY] {response.text}")
-        else:
-            print(f"[SENT] Webhook for: {title} (ID: {mod_id})")
+                print(f"[RATE LIMITED] Retrying after {retry_after} seconds...")
 
-    except requests.exceptions.RequestException as e:
-        print(f"[ERROR] Webhook request exception: {e}")
+                time.sleep(retry_after)
+
+                continue
+
+            response.raise_for_status()
+
+            print(f"[SENT] Webhook for: {title}")
+
+            break
+
+        except requests.exceptions.RequestException as e:
+
+            print(f"[ERROR] Webhook failed: {e}")
 
 
 
