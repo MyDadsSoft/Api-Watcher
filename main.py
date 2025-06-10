@@ -64,8 +64,20 @@ def send_discord_notification(mod):
 
     data = {
         "username": "API Bot",
-        "content": f"[🟢 Download & Launch]({launch_url})",
-        "embeds": [embed]
+        "embeds": [embed],
+        "components": [
+            {
+                "type": 1,
+                "components": [
+                    {
+                        "type": 2,
+                        "style": 5,  # Link button
+                        "label": "🟢 Download & Launch",
+                        "url": launch_url
+                    }
+                ]
+            }
+        ]
     }
 
     if not WEBHOOK_URL:
@@ -91,6 +103,7 @@ def send_discord_notification(mod):
 
     except requests.exceptions.RequestException as e:
         print(f"[ERROR] Webhook request exception: {e}")
+
 
 
 def check_for_new_mods():
