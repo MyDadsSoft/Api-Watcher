@@ -43,14 +43,13 @@ def send_discord_notification(mod):
 
     created_date_str = created_at.split("T")[0] if "T" in created_at else created_at
 
+    # Embed description without launch link
     description = (
         f"**Category:** {category}\n"
         f"**Version:** {version}\n"
         f"**Access:** {access}\n"
-        f"**Uploaded:** {created_date_str}\n"
-        f"[🟢 Download & Launch](myapp://launch)"
+        f"**Uploaded:** {created_date_str}"
     )
-
 
     embed = {
         "title": f"🆕 New Mod: {title}",
@@ -61,7 +60,12 @@ def send_discord_notification(mod):
     if image_url:
         embed["image"] = {"url": image_url}
 
-    data = {"username": "API Bot", "embeds": [embed]}
+    # 🔁 This part is key: put the launch link in the "content" field!
+    data = {
+        "username": "API Bot",
+        "content": f"[🟢 Download & Launch](myapp://launch)",
+        "embeds": [embed]
+    }
 
     while True:
         try:
