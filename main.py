@@ -15,32 +15,26 @@ START_DATE = datetime.strptime(START_DATE_STR, "%Y-%m-%d").date()
 
 seen_mod_ids = set()  # In-memory cache only
 
-
 @app.route('/')
 def home():
     return "✅ I'm alive! Watching for new mods..."
-
 
 def fetch_mods():
     try:
         response = requests.get(API_URL)
         response.raise_for_status()
-        mods = response.json()
-        print(f"[FETCHED] {len(mods)} mods fetched from API.")
-        return mods
+        return response.json()
     except Exception as e:
         print(f"[ERROR] Failed to fetch mods: {e}")
         return []
 
-
 def send_discord_notification(mod):
-    title = mod.get("name", "Untitled Mod")
+    title = mod.get("name", "Unknown Title")
     category = mod.get("category", "Unknown")
     version = mod.get("version", "Unknown")
-    access = mod.get("access_type", "Unknown")
+    access = mod.get("access", "Unknown")
     created_at = mod.get("created_at", "")
     image_url = mod.get("image_url", "")
-
     created_date_str = created_at.split("T")[0] if "T" in created_at else created_at
 
     description = (
@@ -53,13 +47,11 @@ def send_discord_notification(mod):
     embed = {
         "title": f"🆕 New Mod: {title}",
         "description": description,
-        "color": 3066993
+        "color": 0x00ff00,
+        "image": {"url": image_url} if image_url else {}
     }
 
-    if image_url:
-        embed["image"] = {"url": image_url}
-
-    data = {"username": "API Bot", "embeds": [embed]}
+    data = {"embeds": [embed]}
 
     while True:
         try:
@@ -74,8 +66,8 @@ def send_discord_notification(mod):
             break
         except requests.exceptions.RequestException as e:
             print(f"[ERROR] Webhook failed: {e}")
+            print(f"[WEBHOOK PAYLOAD] {json.dumps(data, indent=2)}")
             break
-
 
 def check_for_new_mods():
     print("🔁 Mod watcher started...")
@@ -86,12 +78,10 @@ def check_for_new_mods():
         new_mods = []
 
         for mod in mods:
-            mod_id = mod.get('id')
-            if not mod_id:
-                continue
+            mod_id = mod.get("id")
+            created_str = mod.get("created_at")
 
-            created_str = mod.get('created_at')
-            if not created_str:
+            if not mod_id or not created_str:
                 continue
 
             try:
@@ -116,14 +106,10 @@ def check_for_new_mods():
 
         time.sleep(CHECK_INTERVAL)
 
-
 def run_background_tasks():
-    t = Thread(target=check_for_new_mods)
-    t.daemon = True
-    t.start()
-
+    Thread(target=check_for_new_mods, daemon=True).start()
 
 if __name__ == '__main__':
-    print("[BOOT] App started fresh — in-memory cache cleared.")
+    print("[BOOT] App started fresh — in-memory cache only.")
     run_background_tasks()
     app.run(host='0.0.0.0', port=8080)
