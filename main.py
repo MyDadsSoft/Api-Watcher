@@ -33,12 +33,12 @@ def fetch_mods():
         return []
 
 def send_discord_notification(mod):
-    title = mod.get("name", "Unknown Title")
-    category = mod.get("category", "Unknown")
-    version = mod.get("version", "Unknown")
-    access = mod.get("access", "Unknown")
-    created_at = mod.get("created_at", "")
-    image_url = mod.get("image_url", "")
+    title = mod.get("name") or "Unknown Title"
+    category = mod.get("category") or "Unknown"
+    version = mod.get("version") or "Unknown"
+    access = mod.get("access") or "Unknown"
+    created_at = mod.get("created_at") or ""
+    image_url = mod.get("image_url") or ""
     created_date_str = created_at.split("T")[0] if "T" in created_at else created_at
 
     description = (
@@ -54,11 +54,11 @@ def send_discord_notification(mod):
         "color": 0x9b59b6  # Purple
     }
 
-    if image_url:
+    if image_url.startswith("http"):
         embed["image"] = {"url": image_url}
 
     data = {
-        "content": "<@&1374389568513769503>",  # Ping the role
+        "content": "<@&1374389568513769503>",
         "embeds": [embed],
         "allowed_mentions": {
             "parse": ["roles"],
