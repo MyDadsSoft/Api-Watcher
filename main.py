@@ -62,8 +62,7 @@ def send_discord_notification(mod):
         "content": "<@&1374389568513769503>",  # Mention the role
         "embeds": [embed],
         "allowed_mentions": {
-            "parse": ["roles"],
-            "roles": ["1374389568513769503"]
+            "roles": ["1374389568513769503"]  # ✅ Fixed: Only allow mentioning this role
         }
     }
 
