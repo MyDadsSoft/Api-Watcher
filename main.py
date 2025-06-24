@@ -51,11 +51,18 @@ def send_discord_notification(mod):
     embed = {
         "title": f"🆕 New Mod: {title}",
         "description": description,
-        "color": 0x9b59b6,  # Nice purple color
+        "color": 0x9b59b6,  # Nice purple
         "image": {"url": image_url} if image_url else {}
     }
 
-    data = {"embeds": [embed]}
+    data = {
+        "content": "<@&1374389568513769503>",  # Mention the role
+        "embeds": [embed],
+        "allowed_mentions": {
+            "parse": ["roles"],
+            "roles": ["1374389568513769503"]
+        }
+    }
 
     while True:
         try:
@@ -71,7 +78,7 @@ def send_discord_notification(mod):
         except requests.exceptions.RequestException as e:
             log(f"[ERROR] Webhook failed: {e}")
             log(f"[WEBHOOK PAYLOAD] {json.dumps(data, indent=2)}")
-            time.sleep(5)  # Retry after short delay
+            time.sleep(5)
 
 def check_for_new_mods():
     log("🔁 Mod watcher started...")
