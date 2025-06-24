@@ -51,12 +51,14 @@ def send_discord_notification(mod):
     embed = {
         "title": f"🆕 New Mod: {title}",
         "description": description,
-        "color": 0x9b59b6,  # Nice purple
-        "image": {"url": image_url} if image_url else {}
+        "color": 0x9b59b6  # Purple
     }
 
+    if image_url:
+        embed["image"] = {"url": image_url}
+
     data = {
-        "content": "<@&1374389568513769503>",  # Mention the role
+        "content": "<@&1374389568513769503>",  # Ping the role
         "embeds": [embed],
         "allowed_mentions": {
             "parse": ["roles"],
