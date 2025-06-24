@@ -51,14 +51,15 @@ def send_discord_notification(mod):
     embed = {
         "title": f"🆕 New Mod: {title}",
         "description": description,
-        "color": 0x9b59b6  # Purple
+        "color": 0x9b59b6  # Purple color
     }
 
+    # Only include image if it's a valid URL
     if image_url.startswith("http"):
         embed["image"] = {"url": image_url}
 
-    data = {
-        "content": "<@&1374389568513769503>",
+    payload = {
+        "content": "<@&1374389568513769503>",  # Mention the role
         "embeds": [embed],
         "allowed_mentions": {
             "parse": ["roles"],
@@ -68,7 +69,7 @@ def send_discord_notification(mod):
 
     while True:
         try:
-            response = requests.post(WEBHOOK_URL, json=data)
+            response = requests.post(WEBHOOK_URL, json=payload)
             if response.status_code == 429:
                 retry_after = response.json().get("retry_after", 1000) / 1000
                 log(f"[RATE LIMITED] Retrying after {retry_after} seconds...")
@@ -78,9 +79,13 @@ def send_discord_notification(mod):
             log(f"[SENT] Webhook for: {title}")
             break
         except requests.exceptions.RequestException as e:
-            log(f"[ERROR] Webhook failed: {e}")
-            log(f"[WEBHOOK PAYLOAD] {json.dumps(data, indent=2)}")
-            time.sleep(5)
+            log("[ERROR] Webhook failed:")
+            log(str(e))
+            log("[DEBUG] Raw payload being sent:")
+            log(payload)
+            if response is not None:
+                log(f"[DEBUG] Discord response: {response.status_code} - {response.text}")
+            break
 
 def check_for_new_mods():
     log("🔁 Mod watcher started...")
