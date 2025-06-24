@@ -4,6 +4,7 @@ import requests
 import time
 import os
 from datetime import datetime
+import json
 
 app = Flask('')
 
@@ -15,6 +16,9 @@ START_DATE = datetime.strptime(START_DATE_STR, "%Y-%m-%d").date()
 
 seen_mod_ids = set()  # In-memory cache only
 
+def log(msg):
+    print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {msg}")
+
 @app.route('/')
 def home():
     return "✅ I'm alive! Watching for new mods..."
@@ -25,7 +29,7 @@ def fetch_mods():
         response.raise_for_status()
         return response.json()
     except Exception as e:
-        print(f"[ERROR] Failed to fetch mods: {e}")
+        log(f"[ERROR] Failed to fetch mods: {e}")
         return []
 
 def send_discord_notification(mod):
@@ -47,7 +51,7 @@ def send_discord_notification(mod):
     embed = {
         "title": f"🆕 New Mod: {title}",
         "description": description,
-        "color": 0x00ff00,
+        "color": 0x9b59b6,  # Nice purple color
         "image": {"url": image_url} if image_url else {}
     }
 
@@ -58,23 +62,23 @@ def send_discord_notification(mod):
             response = requests.post(WEBHOOK_URL, json=data)
             if response.status_code == 429:
                 retry_after = response.json().get("retry_after", 1000) / 1000
-                print(f"[RATE LIMITED] Retrying after {retry_after} seconds...")
+                log(f"[RATE LIMITED] Retrying after {retry_after} seconds...")
                 time.sleep(retry_after)
                 continue
             response.raise_for_status()
-            print(f"[SENT] Webhook for: {title}")
+            log(f"[SENT] Webhook for: {title}")
             break
         except requests.exceptions.RequestException as e:
-            print(f"[ERROR] Webhook failed: {e}")
-            print(f"[WEBHOOK PAYLOAD] {json.dumps(data, indent=2)}")
-            break
+            log(f"[ERROR] Webhook failed: {e}")
+            log(f"[WEBHOOK PAYLOAD] {json.dumps(data, indent=2)}")
+            time.sleep(5)  # Retry after short delay
 
 def check_for_new_mods():
-    print("🔁 Mod watcher started...")
+    log("🔁 Mod watcher started...")
 
     while True:
         mods = fetch_mods()
-        print(f"[INFO] Checking {len(mods)} mods for new entries since {START_DATE}")
+        log(f"[INFO] Checking {len(mods)} mods for new entries since {START_DATE}")
         new_mods = []
 
         for mod in mods:
@@ -88,21 +92,21 @@ def check_for_new_mods():
                 created_dt = datetime.fromisoformat(created_str.replace("Z", "+00:00"))
                 created_date = created_dt.date()
             except Exception as e:
-                print(f"[ERROR] Date parsing error: {e}")
+                log(f"[ERROR] Date parsing error: {e}")
                 continue
 
-            print(f"[DEBUG] Mod: {mod.get('name')} | Created: {created_date} | ID: {mod_id}")
+            log(f"[DEBUG] Mod: {mod.get('name')} | Created: {created_date} | ID: {mod_id}")
 
             if mod_id not in seen_mod_ids and created_date >= START_DATE:
                 new_mods.append(mod)
                 seen_mod_ids.add(mod_id)
 
         if new_mods:
-            print(f"[FOUND] {len(new_mods)} new mod(s).")
+            log(f"[FOUND] {len(new_mods)} new mod(s).")
             for mod in new_mods:
                 send_discord_notification(mod)
         else:
-            print("✅ No new mods found.")
+            log("✅ No new mods found.")
 
         time.sleep(CHECK_INTERVAL)
 
@@ -110,6 +114,6 @@ def run_background_tasks():
     Thread(target=check_for_new_mods, daemon=True).start()
 
 if __name__ == '__main__':
-    print("[BOOT] App started fresh — in-memory cache only.")
+    log("[BOOT] App started fresh — in-memory cache only.")
     run_background_tasks()
     app.run(host='0.0.0.0', port=8080)
